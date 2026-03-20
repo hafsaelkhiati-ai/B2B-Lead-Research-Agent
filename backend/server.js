@@ -61,4 +61,3 @@ cron.schedule("0 8 * * 1-5", async () => {
 app.listen(PORT, () => {
   logger.info(`🚀 B2B Lead Agent backend running on port ${PORT}`);
 });
-
