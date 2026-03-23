@@ -1,0 +1,30 @@
+# Railway Deployment — Quick Setup
+
+## 1. Deploy to Railway
+Push this entire folder to a GitHub repo, then connect it to Railway.
+
+## 2. Add Environment Variables in Railway Dashboard
+Go to: Your Service → Variables → Add all these:
+
+```
+PORT=4000
+NODE_ENV=production
+OPENAI_API_KEY=sk-proj-J2IqLslp...
+HUBSPOT_ACCESS_TOKEN=pat-eu1-b07d...
+APOLLO_API_KEY=U_G8KEWJ...
+CLAY_API_KEY=574c439f...
+SLACK_WEBHOOK_URL=xoxe-1-My0x...
+ICP_INDUSTRIES=marketing agencies,saas,ecommerce
+ICP_LOCATIONS=morocco,france,canada,usa
+ICP_MIN_EMPLOYEES=5
+ICP_MAX_EMPLOYEES=100
+```
+
+## 3. After first deploy
+Copy your Railway public URL (e.g. https://xxx.up.railway.app)
+Then update frontend/.env:
+  REACT_APP_API_URL=https://xxx.up.railway.app/api
+
+## 4. Health check
+Visit: https://xxx.up.railway.app/health
+Expected response: {"status":"ok","timestamp":"..."}
