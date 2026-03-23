@@ -2,8 +2,8 @@
   "name": "b2b-lead-agent",
   "version": "1.0.0",
   "scripts": {
-    "start": "cd backend && node server.js",
-    "install-deps": "cd backend && npm install"
+    "start": "node backend/server.js",
+    "build": "cd frontend && npm install && npm run build && cp -r build ../backend/public"
   },
   "engines": {
     "node": ">=18.0.0"
