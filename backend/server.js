@@ -1,51 +1,51 @@
 // ============================================================
 //  server.js — B2B Lead Research Agent
-//  Express server that orchestrates the full agent pipeline
+//  Express server — serves React frontend + API
 // ============================================================
 
-require("dotenv").config(); // Loads .env — make sure .env exists!
+require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const rateLimit = require("express-rate-limit");
 const cron = require("node-cron");
 const logger = require("./services/logger");
+const { initDB } = require("./services/db");
 
 const leadsRouter = require("./routes/leads");
 const pipelineRouter = require("./routes/pipeline");
 const statsRouter = require("./routes/stats");
 
 const app = express();
-const PORT = process.env.PORT || 4000; // ← Change PORT in .env if needed
+const PORT = process.env.PORT || 4000;
 
-// ── Middleware ───────────────────────────────────────────────
-app.use(cors({
-  origin: process.env.FRONTEND_URL || "*", // ← Lock this down in production
-}));
+app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
 app.use(express.json());
 
-// Rate limiting — prevents API key abuse
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 100,
   message: { error: "Too many requests, please slow down." },
 });
 app.use("/api/", limiter);
 
-// ── Routes ───────────────────────────────────────────────────
-app.use("/api/leads", leadsRouter);       // Lead management & enrichment
-app.use("/api/pipeline", pipelineRouter); // Trigger full agent run
-app.use("/api/stats", statsRouter);       // Dashboard stats
+app.use("/api/leads", leadsRouter);
+app.use("/api/pipeline", pipelineRouter);
+app.use("/api/stats", statsRouter);
 
-// ── Health check ─────────────────────────────────────────────
 app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// ── Scheduled run (optional) ─────────────────────────────────
-// Runs the full pipeline automatically every weekday at 08:00 (server timezone)
-// Change the cron expression to match your schedule
-// Disable by commenting this block out
+// Serve React frontend
+const frontendBuild = path.join(__dirname, "public");
+app.use(express.static(frontendBuild));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(frontendBuild, "index.html"));
+});
+
+// Scheduled pipeline — weekdays at 08:00
 cron.schedule("0 8 * * 1-5", async () => {
   logger.info("⏰ Scheduled pipeline run starting...");
   try {
@@ -57,7 +57,16 @@ cron.schedule("0 8 * * 1-5", async () => {
   }
 });
 
-// ── Start ─────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  logger.info(`🚀 B2B Lead Agent backend running on port ${PORT}`);
-});
+// ── Init DB then start server ────────────────────────────────
+initDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      logger.info(`🚀 B2B Lead Agent running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    logger.error("Failed to init DB, starting without DB:", err.message);
+    app.listen(PORT, () => {
+      logger.info(`🚀 B2B Lead Agent running on port ${PORT} (no DB)`);
+    });
+  });
